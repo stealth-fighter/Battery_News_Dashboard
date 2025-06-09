@@ -67,9 +67,11 @@ with tab2:
 
 import feedparser  # already imported above
 
-# --- Tab 3: Research Papers (MDPI + arXiv RSS) ---
+# --- Tab 3: Research Papers (Filtered MDPI + arXiv) ---
 with tab3:
-    st.title("📚 Research Papers – RSS Feeds (MDPI + arXiv)")
+    st.title("📚 Research Papers – MDPI + arXiv (Filtered)")
+
+    keywords = ["battery", "recycling", "lithium", "ev", "material flow"]
 
     sources = {
         "🔬 MDPI Batteries Journal": "https://www.mdpi.com/rss/journal/batteries",
@@ -83,12 +85,22 @@ with tab3:
         if not feed.entries:
             st.markdown("_No papers found or RSS feed not available._")
         else:
-            for entry in feed.entries[:10]:
-                title = entry.get("title", "No title")
+            shown = 0
+            for entry in feed.entries:
+                title = entry.get("title", "").lower()
+                summary = entry.get("summary", "").lower()
                 link = entry.get("link", "#")
-                summary = entry.get("summary", "No abstract available.")
 
-                st.markdown(f"**🔹 Title:** [{title}]({link})")
-                st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
-                st.markdown("---")
+                # Filter by keyword
+                if any(keyword in title or keyword in summary for keyword in keywords):
+                    st.markdown(f"**🔹 Title:** [{entry.title}]({link})")
+                    st.markdown(f"**🔍 Abstract:** {entry.summary[:300]}...")
+                    st.markdown("---")
+                    shown += 1
+
+                if shown >= 10:
+                    break  # limit to 10 filtered results
+
+            if shown == 0:
+                st.markdown("_No relevant papers matched your keywords._")
 
