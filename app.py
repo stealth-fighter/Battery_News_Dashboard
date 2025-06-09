@@ -51,17 +51,19 @@ with tab1:
                 published_dt = datetime.fromtimestamp(time.mktime(published))
                 pub_date = published_dt.date()
             else:
-                pub_date = None  # Show anyway if unknown
+                pub_date = None  # Allow missing dates
 
-            # Apply date and keyword filters
-            show_article = (
-                search_query.strip() == "" or search_query.lower() in title.lower()
-            )
+            # Apply keyword and date filter
+            matches_keyword = (search_query.strip() == "" or search_query.lower() in title.lower())
 
             if filter_range == "Today":
-                show_article = show_article and (pub_date == cutoff_today if pub_date else False)
+                matches_date = (pub_date == cutoff_today if pub_date else True)
             elif filter_range == "This Week":
-                show_article = show_article and (pub_date >= cutoff_week.date() if pub_date else False)
+                matches_date = (pub_date >= cutoff_week.date() if pub_date else True)
+            else:
+                matches_date = True
+
+            show_article = matches_keyword and matches_date
 
             if show_article:
                 col1, col2 = st.columns([0.85, 0.15])
