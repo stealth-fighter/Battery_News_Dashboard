@@ -5,13 +5,9 @@ from datetime import datetime
 # --- Page setup ---
 st.set_page_config(page_title="Battery Project News", layout="wide")
 
-# --- Title and date ---
-st.title("🔋 Battery & EV News – California Focus")
-st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
-st.markdown("Stay updated with live news on battery recycling, EV policies, and circular economy topics.")
-
-# --- Search input box ---
-search_query = st.text_input("🔍 Search in article titles:", "")
+# --- Initialize session state for saved articles ---
+if "saved_articles" not in st.session_state:
+    st.session_state.saved_articles = []
 
 # --- Define RSS feeds ---
 rss_feeds = {
@@ -22,24 +18,47 @@ rss_feeds = {
     "⚡ California EV Policy Updates": "https://news.google.com/rss/search?q=california+ev+battery+recycling+policy"
 }
 
-# --- Display headlines with filtering ---
-for topic, url in rss_feeds.items():
-    st.markdown(f"### {topic}")
-    feed = feedparser.parse(url)
+# --- Tabs ---
+tab1, tab2 = st.tabs(["🔍 Live News", "💾 Saved Articles"])
 
-    # Track if any articles match the search
-    results_found = False
+# --- Tab 1: Live News Feed ---
+with tab1:
+    st.title("🔋 Battery & EV News – California Focus")
+    st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
+    st.markdown("Search and explore the latest articles on battery recycling, EVs, and California policy.")
 
-    for entry in feed.entries[:10]:  # Limit to top 10 results
-        title = entry.title
-        link = entry.link
+    search_query = st.text_input("🔍 Search in article titles:", "")
 
-        # Filter if search is active
-        if search_query.strip() == "" or search_query.lower() in title.lower():
-            st.markdown(f"- [{title}]({link})")
-            results_found = True
+    for topic, url in rss_feeds.items():
+        st.markdown(f"### {topic}")
+        feed = feedparser.parse(url)
+        results_found = False
 
-    if not results_found:
-        st.markdown("_No articles found matching your search._")
+        for entry in feed.entries[:10]:
+            title = entry.title
+            link = entry.link
 
-    st.markdown("---")
+            if search_query.strip() == "" or search_query.lower() in title.lower():
+                col1, col2 = st.columns([0.85, 0.15])
+                with col1:
+                    st.markdown(f"- [{title}]({link})")
+                with col2:
+                    if st.button("Save", key=title):
+                        article_data = {"title": title, "link": link}
+                        if article_data not in st.session_state.saved_articles:
+                            st.session_state.saved_articles.append(article_data)
+                results_found = True
+
+        if not results_found:
+            st.markdown("_No articles found matching your search._")
+
+        st.markdown("---")
+
+# --- Tab 2: Saved Articles ---
+with tab2:
+    st.title("💾 Saved Articles")
+    if not st.session_state.saved_articles:
+        st.markdown("_You haven’t saved any articles yet._")
+    else:
+        for article in st.session_state.saved_articles:
+            st.markdown(f"- [{article['title']}]({article['link']})")
