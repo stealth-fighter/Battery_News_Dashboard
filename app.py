@@ -67,21 +67,63 @@ with tab2:
 
 import feedparser  # already imported above
 
-# --- Tab 3: Research Papers (MDPI Only) ---
+# --- Tab 3: Research Papers (Search + Save) ---
 with tab3:
-    st.title("📚 Research Papers – MDPI Batteries Journal")
+    st.title("📚 Research Papers – MDPI + ScienceDaily")
 
-    mdpi_rss_url = "https://www.mdpi.com/rss/journal/batteries"
-    feed = feedparser.parse(mdpi_rss_url)
+    # --- Initialize saved list if not already done ---
+    if "saved_research" not in st.session_state:
+        st.session_state.saved_research = []
 
-    if not feed.entries:
-        st.markdown("_No papers found or RSS feed not available._")
+    # --- Search bar ---
+    search_term = st.text_input("🔍 Search research titles and abstracts:", "").lower()
+
+    sources = {
+        "🔋 MDPI – Batteries": "https://www.mdpi.com/rss/journal/batteries",
+        "⚡ MDPI – Energies": "https://www.mdpi.com/rss/journal/energies",
+        "🌍 MDPI – Sustainability": "https://www.mdpi.com/rss/journal/sustainability",
+        "📰 ScienceDaily – Battery Tech": "https://www.sciencedaily.com/rss/matter_energy/batteries.xml"
+    }
+
+    for label, rss_url in sources.items():
+        st.markdown(f"### {label}")
+        feed = feedparser.parse(rss_url)
+
+        if not feed.entries:
+            st.markdown("_No papers found or RSS feed not available._")
+        else:
+            shown = 0
+            for i, entry in enumerate(feed.entries[:10]):
+                title = entry.get("title", "")
+                link = entry.get("link", "#")
+                summary = entry.get("summary", "")
+                combined_text = f"{title.lower()} {summary.lower()}"
+
+                if search_term and search_term not in combined_text:
+                    continue  # skip unmatched items
+
+                col1, col2 = st.columns([0.85, 0.15])
+                with col1:
+                    st.markdown(f"**🔹 Title:** [{title}]({link})")
+                    st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
+
+                with col2:
+                    save_key = f"save_research_{i}_{label}"
+                    if st.button("💾 Save", key=save_key):
+                        paper_data = {"title": title, "link": link}
+                        if paper_data not in st.session_state.saved_research:
+                            st.session_state.saved_research.append(paper_data)
+
+                st.markdown("---")
+                shown += 1
+
+            if shown == 0:
+                st.markdown("_No matching research papers found._")
+
+    # --- Show saved papers ---
+    st.markdown("## 💾 Saved Research Papers")
+    if not st.session_state.saved_research:
+        st.markdown("_You haven’t saved any research papers yet._")
     else:
-        for entry in feed.entries[:10]:
-            title = entry.get("title", "No title")
-            link = entry.get("link", "#")
-            summary = entry.get("summary", "No abstract available.")
-
-            st.markdown(f"**🔹 Title:** [{title}]({link})")
-            st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
-            st.markdown("---")
+        for paper in st.session_state.saved_research:
+            st.markdown(f"- [{paper['title']}]({paper['link']})")
