@@ -2,32 +2,40 @@ import streamlit as st
 import feedparser
 from datetime import datetime
 
-# Set page layout
+# Page setup
 st.set_page_config(page_title="Battery Project News", layout="wide")
 
-# Title and date
 st.title("🔋 Battery & EV News – California Focus")
 st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
-st.markdown("This dashboard shows the latest daily news related to battery recycling, EVs, and circular economy topics in California.")
+st.markdown("Stay updated with live news on battery recycling, EV policies, and circular economy topics.")
 
-# Define Google News RSS feeds
+# 🔍 Search bar
+search_query = st.text_input("Search in article titles:", "")
+
+# Google News RSS feeds
 rss_feeds = {
     "🔁 California Battery Recycling": "https://news.google.com/rss/search?q=california+battery+recycling",
-    "🗑️ EV Battery Disposal & End-of-Life": "https://news.google.com/rss/search?q=ev+battery+disposal+california",
+    "🗑️ EV Battery Disposal": "https://news.google.com/rss/search?q=ev+battery+disposal+california",
     "🔄 Second-Life Applications": "https://news.google.com/rss/search?q=second+life+electric+vehicle+batteries",
     "📊 Material Flow Analysis of Lithium-Ion Batteries": "https://news.google.com/rss/search?q=material+flow+analysis+lithium+ion+batteries",
-    "⚡ California EV Legislation & Recycling Policy": "https://news.google.com/rss/search?q=california+ev+battery+recycling+policy"
+    "⚡ California EV Policy": "https://news.google.com/rss/search?q=california+ev+battery+recycling+policy"
 }
 
-# Loop through topics and display top 5 news items each
+# Display news section-wise with optional search filter
 for topic, url in rss_feeds.items():
     st.markdown(f"### {topic}")
     feed = feedparser.parse(url)
 
-    if not feed.entries:
-        st.markdown("_No articles found today._")
-    else:
-        for entry in feed.entries[:5]:
-            st.markdown(f"- [{entry.title}]({entry.link})")
+    found_any = False  # Track if any article matched
+    for entry in feed.entries[:10]:
+        title = entry.title
+        link = entry.link
+
+        if search_query.lower() in title.lower():
+            st.markdown(f"- [{title}]({link})")
+            found_any = True
+
+    if not found_any:
+        st.markdown("_No articles found matching your search._")
 
     st.markdown("---")
