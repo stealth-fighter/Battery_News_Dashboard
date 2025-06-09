@@ -71,10 +71,10 @@ import feedparser  # already imported above
 with tab3:
     st.title("📚 Research Papers – RSS Feeds (MDPI + arXiv)")
 
-   sources = {
-    "🔬 MDPI Batteries Journal": "https://www.mdpi.com/rss/journal/batteries",
-    "📄 arXiv – Energy Systems": "https://export.arxiv.org/rss/eess.SY"
-}
+    sources = {
+        "🔬 MDPI Batteries Journal": "https://www.mdpi.com/rss/journal/batteries",
+        "📄 arXiv – Energy Systems": "https://export.arxiv.org/rss/eess.SY"
+    }
 
     for source_name, rss_url in sources.items():
         st.markdown(f"### {source_name}")
@@ -83,7 +83,7 @@ with tab3:
         if not feed.entries:
             st.markdown("_No papers found or RSS feed not available._")
         else:
-            for entry in feed.entries[:10]:  # limit to top 10
+            for entry in feed.entries[:10]:
                 title = entry.get("title", "No title")
                 link = entry.get("link", "#")
                 summary = entry.get("summary", "No abstract available.")
@@ -91,5 +91,4 @@ with tab3:
                 st.markdown(f"**🔹 Title:** [{title}]({link})")
                 st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
                 st.markdown("---")
-
 
