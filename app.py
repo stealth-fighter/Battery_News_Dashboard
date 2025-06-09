@@ -1,14 +1,17 @@
 import streamlit as st
 import feedparser
-import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 # --- Page setup ---
 st.set_page_config(page_title="Battery Project News", layout="wide")
 
-# --- Initialize session state for saved articles ---
+# --- Initialize session state ---
 if "saved_articles" not in st.session_state:
     st.session_state.saved_articles = []
+
+if "saved_research" not in st.session_state:
+    st.session_state.saved_research = []
 
 # --- Define RSS feeds ---
 rss_feeds = {
@@ -20,7 +23,7 @@ rss_feeds = {
 }
 
 # --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["🔍 Live News", "💾 Saved Articles", "📚 Research Papers"])
+tab1, tab2, tab3 = st.tabs(["🔍 Live News", "📚 Research Papers", "💾 Saved Items"])
 
 # --- Tab 1: Live News Feed ---
 with tab1:
@@ -28,7 +31,13 @@ with tab1:
     st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
     st.markdown("Search and explore the latest articles on battery recycling, EVs, and California policy.")
 
+    # Search and filter options
     search_query = st.text_input("🔍 Search in article titles:", "")
+    filter_range = st.radio("🕒 Show articles from:", ["Today", "This Week"], horizontal=True)
+
+    now = datetime.utcnow()
+    cutoff_today = now.date()
+    cutoff_week = now - timedelta(days=7)
 
     for topic, url in rss_feeds.items():
         st.markdown(f"### {topic}")
@@ -38,44 +47,44 @@ with tab1:
         for i, entry in enumerate(feed.entries[:10]):
             title = entry.title
             link = entry.link
+            published = getattr(entry, "published_parsed", None)
 
-            if search_query.strip() == "" or search_query.lower() in title.lower():
+            if published:
+                published_dt = datetime.fromtimestamp(time.mktime(published))
+                pub_date = published_dt.date()
+            else:
+                pub_date = None
+
+            matches_keyword = (search_query.strip() == "" or search_query.lower() in title.lower())
+
+            if filter_range == "Today":
+                matches_date = (pub_date == cutoff_today if pub_date else True)
+            elif filter_range == "This Week":
+                matches_date = (pub_date >= cutoff_week.date() if pub_date else True)
+            else:
+                matches_date = True
+
+            if matches_keyword and matches_date:
                 col1, col2 = st.columns([0.85, 0.15])
                 with col1:
                     st.markdown(f"- [{title}]({link})")
                 with col2:
                     unique_key = f"save_{i}_{topic}_{link}"
-                    if st.button("Save", key=unique_key):
+                    if st.button("💾 Save", key=unique_key):
                         article_data = {"title": title, "link": link}
                         if article_data not in st.session_state.saved_articles:
                             st.session_state.saved_articles.append(article_data)
                 results_found = True
 
         if not results_found:
-            st.markdown("_No articles found matching your search._")
+            st.markdown("_No articles found matching your filters._")
 
         st.markdown("---")
 
-# --- Tab 2: Saved Articles ---
+# --- Tab 2: Research Papers (Search + Save) ---
 with tab2:
-    st.title("💾 Saved Articles")
-    if not st.session_state.saved_articles:
-        st.markdown("_You haven’t saved any articles yet._")
-    else:
-        for article in st.session_state.saved_articles:
-            st.markdown(f"- [{article['title']}]({article['link']})")
-
-import feedparser  # already imported above
-
-# --- Tab 3: Research Papers (Search + Save) ---
-with tab3:
     st.title("📚 Research Papers – MDPI + ScienceDaily")
 
-    # --- Initialize saved list if not already done ---
-    if "saved_research" not in st.session_state:
-        st.session_state.saved_research = []
-
-    # --- Search bar ---
     search_term = st.text_input("🔍 Search research titles and abstracts:", "").lower()
 
     sources = {
@@ -100,13 +109,12 @@ with tab3:
                 combined_text = f"{title.lower()} {summary.lower()}"
 
                 if search_term and search_term not in combined_text:
-                    continue  # skip unmatched items
+                    continue
 
                 col1, col2 = st.columns([0.85, 0.15])
                 with col1:
                     st.markdown(f"**🔹 Title:** [{title}]({link})")
                     st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
-
                 with col2:
                     save_key = f"save_research_{i}_{label}"
                     if st.button("💾 Save", key=save_key):
@@ -120,10 +128,36 @@ with tab3:
             if shown == 0:
                 st.markdown("_No matching research papers found._")
 
-    # --- Show saved papers ---
-    st.markdown("## 💾 Saved Research Papers")
+# --- Tab 3: Unified Saved Items (News + Research) ---
+with tab3:
+    st.title("💾 Saved Items")
+
+    # --- Saved News Section ---
+    st.subheader("🗞️ Saved News Articles")
+    if not st.session_state.saved_articles:
+        st.markdown("_You haven’t saved any news articles yet._")
+    else:
+        for i, article in enumerate(st.session_state.saved_articles):
+            col1, col2 = st.columns([0.85, 0.15])
+            with col1:
+                st.markdown(f"- [{article['title']}]({article['link']})")
+            with col2:
+                if st.button("🗑️ Unsave", key=f"unsave_news_{i}"):
+                    st.session_state.saved_articles.pop(i)
+                    st.experimental_rerun()
+
+    st.markdown("---")
+
+    # --- Saved Research Section ---
+    st.subheader("📚 Saved Research Papers")
     if not st.session_state.saved_research:
         st.markdown("_You haven’t saved any research papers yet._")
     else:
-        for paper in st.session_state.saved_research:
-            st.markdown(f"- [{paper['title']}]({paper['link']})")
+        for i, paper in enumerate(st.session_state.saved_research):
+            col1, col2 = st.columns([0.85, 0.15])
+            with col1:
+                st.markdown(f"- [{paper['title']}]({paper['link']})")
+            with col2:
+                if st.button("🗑️ Unsave", key=f"unsave_research_{i}"):
+                    st.session_state.saved_research.pop(i)
+                    st.experimental_rerun()
