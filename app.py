@@ -1,5 +1,6 @@
 import streamlit as st
 import feedparser
+import requests
 from datetime import datetime
 
 # --- Page setup ---
@@ -19,7 +20,7 @@ rss_feeds = {
 }
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(["🔍 Live News", "💾 Saved Articles"])
+tab1, tab2, tab3 = st.tabs(["🔍 Live News", "💾 Saved Articles", "📚 Research Papers"])
 
 # --- Tab 1: Live News Feed ---
 with tab1:
@@ -63,3 +64,31 @@ with tab2:
     else:
         for article in st.session_state.saved_articles:
             st.markdown(f"- [{article['title']}]({article['link']})")
+
+# --- Tab 3: Research Papers from Semantic Scholar ---
+with tab3:
+    st.title("📚 Research Papers – Lithium-Ion Battery Recycling")
+    st.markdown("Papers sourced via Semantic Scholar API")
+
+    # Define query
+    query = "lithium ion battery recycling"
+    url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={query}&limit=10&fields=title,abstract,authors,url,year"
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        papers = data.get("data", [])
+
+        if not papers:
+            st.markdown("_No research papers found._")
+        else:
+            for paper in papers:
+                st.markdown(f"### 📄 {paper['title']}")
+                st.markdown(f"**Year:** {paper.get('year', 'N/A')}")
+                st.markdown(f"**Authors:** {', '.join(a['name'] for a in paper.get('authors', []))}")
+                st.markdown(f"**Abstract:** {paper.get('abstract', 'No abstract available.')}")
+                st.markdown(f"[🔗 View Full Paper]({paper['url']})")
+                st.markdown("---")
+    else:
+        st.error("❌ Failed to fetch papers from Semantic Scholar.")
