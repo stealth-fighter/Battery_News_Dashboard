@@ -1,6 +1,7 @@
 import streamlit as st
 import feedparser
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 # --- Page setup ---
 st.set_page_config(page_title="Battery Project News", layout="wide")
@@ -27,7 +28,13 @@ with tab1:
     st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
     st.markdown("Search and explore the latest articles on battery recycling, EVs, and California policy.")
 
+    # Search and filter options
     search_query = st.text_input("🔍 Search in article titles:", "")
+    filter_range = st.radio("🕒 Show articles from:", ["Today", "This Week"], horizontal=True)
+
+    now = datetime.utcnow()
+    cutoff_today = now.date()
+    cutoff_week = now - timedelta(days=7)
 
     for topic, url in rss_feeds.items():
         st.markdown(f"### {topic}")
@@ -37,14 +44,31 @@ with tab1:
         for i, entry in enumerate(feed.entries[:10]):
             title = entry.title
             link = entry.link
+            published = getattr(entry, "published_parsed", None)
 
-            if search_query.strip() == "" or search_query.lower() in title.lower():
+            # Parse publish date if available
+            if published:
+                published_dt = datetime.fromtimestamp(time.mktime(published))
+                pub_date = published_dt.date()
+            else:
+                pub_date = None  # Show anyway if unknown
+
+            # Apply date and keyword filters
+            show_article = (
+                search_query.strip() == "" or search_query.lower() in title.lower()
+            )
+
+            if filter_range == "Today":
+                show_article = show_article and (pub_date == cutoff_today if pub_date else False)
+            elif filter_range == "This Week":
+                show_article = show_article and (pub_date >= cutoff_week.date() if pub_date else False)
+
+            if show_article:
                 col1, col2 = st.columns([0.85, 0.15])
                 with col1:
                     st.markdown(f"- [{title}]({link})")
                 with col2:
-                    # ✅ Use unique key using index to avoid DuplicateWidgetID
-                    unique_key = f"save_{i}_{topic}"
+                    unique_key = f"save_{i}_{topic}_{link}"
                     if st.button("Save", key=unique_key):
                         article_data = {"title": title, "link": link}
                         if article_data not in st.session_state.saved_articles:
@@ -52,7 +76,7 @@ with tab1:
                 results_found = True
 
         if not results_found:
-            st.markdown("_No articles found matching your search._")
+            st.markdown("_No articles found matching your filters._")
 
         st.markdown("---")
 
