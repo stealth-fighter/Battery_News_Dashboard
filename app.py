@@ -65,8 +65,31 @@ with tab2:
         for article in st.session_state.saved_articles:
             st.markdown(f"- [{article['title']}]({article['link']})")
 
-# --- Tab 3: Research Papers from Semantic Scholar ---
+import feedparser  # already imported above
+
+# --- Tab 3: Research Papers (MDPI + arXiv RSS) ---
 with tab3:
-    st.title("📚 Research Papers – Lithium-Ion Battery Recycling")
-    st.markdown("_This section is temporarily disabled due to API timeout issues._")
+    st.title("📚 Research Papers – RSS Feeds (MDPI + arXiv)")
+
+    sources = {
+        "🔬 MDPI Batteries Journal": "https://www.mdpi.com/rss/journal/batteries",
+        "📄 arXiv – Battery Recycling": "https://export.arxiv.org/rss/search?query=battery+recycling"
+    }
+
+    for source_name, rss_url in sources.items():
+        st.markdown(f"### {source_name}")
+        feed = feedparser.parse(rss_url)
+
+        if not feed.entries:
+            st.markdown("_No papers found or RSS feed not available._")
+        else:
+            for entry in feed.entries[:10]:  # limit to top 10
+                title = entry.get("title", "No title")
+                link = entry.get("link", "#")
+                summary = entry.get("summary", "No abstract available.")
+
+                st.markdown(f"**🔹 Title:** [{title}]({link})")
+                st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
+                st.markdown("---")
+
 
