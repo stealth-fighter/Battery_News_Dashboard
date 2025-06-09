@@ -68,28 +68,5 @@ with tab2:
 # --- Tab 3: Research Papers from Semantic Scholar ---
 with tab3:
     st.title("📚 Research Papers – Lithium-Ion Battery Recycling")
-    st.markdown("Papers are fetched live from the Semantic Scholar API.")
+    st.markdown("_This section is temporarily disabled due to API timeout issues._")
 
-    query = "lithium ion battery recycling"
-    api_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={query}&limit=10&fields=title,abstract,authors,url,year"
-
-    with st.spinner("🔍 Fetching recent research papers..."):
-        try:
-            response = requests.get(api_url, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            papers = data.get("data", [])
-
-            if not papers:
-                st.markdown("_No research papers found._")
-            else:
-                for paper in papers:
-                    st.markdown(f"### 📄 {paper['title']}")
-                    st.markdown(f"**Year:** {paper.get('year', 'N/A')}")
-                    st.markdown(f"**Authors:** {', '.join(a['name'] for a in paper.get('authors', []))}")
-                    st.markdown(f"**Abstract:** {paper.get('abstract', 'No abstract available.')}")
-                    st.markdown(f"[🔗 View Full Paper]({paper['url']})")
-                    st.markdown("---")
-
-        except requests.exceptions.RequestException:
-            st.error("❌ Failed to load research papers. Semantic Scholar may be temporarily unavailable.")
