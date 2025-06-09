@@ -22,21 +22,39 @@ rss_feeds = {
 tab1, tab2 = st.tabs(["🔍 Live News", "💾 Saved Articles"])
 
 # --- Tab 1: Live News Feed ---
-for entry in feed.entries[:10]:
-    title = entry.title
-    link = entry.link
+with tab1:
+    st.title("🔋 Battery & EV News – California Focus")
+    st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
+    st.markdown("Search and explore the latest articles on battery recycling, EVs, and California policy.")
 
-    if search_query.strip() == "" or search_query.lower() in title.lower():
-        col1, col2 = st.columns([0.85, 0.15])
-        with col1:
-            st.markdown(f"- [{title}]({link})")
-        with col2:
-            unique_key = f"{title}_{link}"
-            if st.button("Save", key=unique_key):
-                article_data = {"title": title, "link": link}
-                if article_data not in st.session_state.saved_articles:
-                    st.session_state.saved_articles.append(article_data)
-        results_found = True
+    search_query = st.text_input("🔍 Search in article titles:", "")
+
+    for topic, url in rss_feeds.items():
+        st.markdown(f"### {topic}")
+        feed = feedparser.parse(url)
+        results_found = False
+
+        for i, entry in enumerate(feed.entries[:10]):
+            title = entry.title
+            link = entry.link
+
+            if search_query.strip() == "" or search_query.lower() in title.lower():
+                col1, col2 = st.columns([0.85, 0.15])
+                with col1:
+                    st.markdown(f"- [{title}]({link})")
+                with col2:
+                    # ✅ Use unique key using index to avoid DuplicateWidgetID
+                    unique_key = f"save_{i}_{topic}"
+                    if st.button("Save", key=unique_key):
+                        article_data = {"title": title, "link": link}
+                        if article_data not in st.session_state.saved_articles:
+                            st.session_state.saved_articles.append(article_data)
+                results_found = True
+
+        if not results_found:
+            st.markdown("_No articles found matching your search._")
+
+        st.markdown("---")
 
 # --- Tab 2: Saved Articles ---
 with tab2:
