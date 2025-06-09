@@ -67,40 +67,21 @@ with tab2:
 
 import feedparser  # already imported above
 
-# --- Tab 3: Research Papers (Filtered MDPI + arXiv) ---
+# --- Tab 3: Research Papers (MDPI Only) ---
 with tab3:
-    st.title("📚 Research Papers – MDPI + arXiv (Filtered)")
+    st.title("📚 Research Papers – MDPI Batteries Journal")
 
-    keywords = ["battery", "recycling", "lithium", "ev", "material flow"]
+    mdpi_rss_url = "https://www.mdpi.com/rss/journal/batteries"
+    feed = feedparser.parse(mdpi_rss_url)
 
-    sources = {
-        "🔬 MDPI Batteries Journal": "https://www.mdpi.com/rss/journal/batteries",
-        "📄 arXiv – Energy Systems": "https://export.arxiv.org/rss/eess.SY"
-    }
+    if not feed.entries:
+        st.markdown("_No papers found or RSS feed not available._")
+    else:
+        for entry in feed.entries[:10]:
+            title = entry.get("title", "No title")
+            link = entry.get("link", "#")
+            summary = entry.get("summary", "No abstract available.")
 
-    for source_name, rss_url in sources.items():
-        st.markdown(f"### {source_name}")
-        feed = feedparser.parse(rss_url)
-
-        if not feed.entries:
-            st.markdown("_No papers found or RSS feed not available._")
-        else:
-            shown = 0
-            for entry in feed.entries:
-                title = entry.get("title", "").lower()
-                summary = entry.get("summary", "").lower()
-                link = entry.get("link", "#")
-
-                # Filter by keyword
-                if any(keyword in title or keyword in summary for keyword in keywords):
-                    st.markdown(f"**🔹 Title:** [{entry.title}]({link})")
-                    st.markdown(f"**🔍 Abstract:** {entry.summary[:300]}...")
-                    st.markdown("---")
-                    shown += 1
-
-                if shown >= 10:
-                    break  # limit to 10 filtered results
-
-            if shown == 0:
-                st.markdown("_No relevant papers matched your keywords._")
-
+            st.markdown(f"**🔹 Title:** [{title}]({link})")
+            st.markdown(f"**🔍 Abstract:** {summary[:300]}...")
+            st.markdown("---")
