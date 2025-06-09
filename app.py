@@ -31,13 +31,8 @@ with tab1:
     st.markdown(f"#### 📅 {datetime.now().strftime('%A, %B %d, %Y')}")
     st.markdown("Search and explore the latest articles on battery recycling, EVs, and California policy.")
 
-    # Search and filter options
+    # Only search filter
     search_query = st.text_input("🔍 Search in article titles:", "")
-    filter_range = st.radio("🕒 Show articles from:", ["Today", "This Week"], horizontal=True)
-
-    now = datetime.utcnow()
-    cutoff_today = now.date()
-    cutoff_week = now - timedelta(days=7)
 
     for topic, url in rss_feeds.items():
         st.markdown(f"### {topic}")
@@ -47,24 +42,8 @@ with tab1:
         for i, entry in enumerate(feed.entries[:10]):
             title = entry.title
             link = entry.link
-            published = getattr(entry, "published_parsed", None)
 
-            if published:
-                published_dt = datetime.fromtimestamp(time.mktime(published))
-                pub_date = published_dt.date()
-            else:
-                pub_date = None
-
-            matches_keyword = (search_query.strip() == "" or search_query.lower() in title.lower())
-
-            if filter_range == "Today":
-                matches_date = (pub_date == cutoff_today if pub_date else True)
-            elif filter_range == "This Week":
-                matches_date = (pub_date >= cutoff_week.date() if pub_date else True)
-            else:
-                matches_date = True
-
-            if matches_keyword and matches_date:
+            if search_query.strip() == "" or search_query.lower() in title.lower():
                 col1, col2 = st.columns([0.85, 0.15])
                 with col1:
                     st.markdown(f"- [{title}]({link})")
@@ -77,7 +56,7 @@ with tab1:
                 results_found = True
 
         if not results_found:
-            st.markdown("_No articles found matching your filters._")
+            st.markdown("_No articles found matching your search._")
 
         st.markdown("---")
 
